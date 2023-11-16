@@ -1,5 +1,5 @@
 import torch
-import wandb
+# import wandb
 
 import utils
 from rl_algorithm.common.option_model import OptionQ
@@ -37,27 +37,27 @@ def init(self, env, preprocess_obs, args, train_interval=4):
     # optimizer
     self.optimizer = torch.optim.RMSprop(self.policy_network.parameters(), args.lr)
 
-    if self.log_wandb:
-        wandb.config.update(
-            {
-                "env": args.env,
-                "algorithm": args.algorithm,
-                "max_episode_length": self.max_episode_length,
-                "train_interval": self.train_interval,
-                "rnd_train_interval": self.rnd_train_interval,
-                "seed": args.seed,
-                "softmax_ww": self.softmax_ww
-            }
-        )
+    # if self.log_wandb:
+    #     wandb.config.update(
+    #         {
+    #             "env": args.env,
+    #             "algorithm": args.algorithm,
+    #             "max_episode_length": self.max_episode_length,
+    #             "train_interval": self.train_interval,
+    #             "rnd_train_interval": self.rnd_train_interval,
+    #             "seed": args.seed,
+    #             "softmax_ww": self.softmax_ww
+    #         }
+    #     )
 
 def init_rnd(self, args):
     self.rnd_scale = args.rnd_scale
     self.rnd_optimizer = torch.optim.RMSprop(self.rnd_policy_network.parameters(), args.lr)
-    if self.log_wandb:
-        wandb.config.update(
-        {
-            "rnd_scale": self.rnd_scale,
-        })
+    # if self.log_wandb:
+    #     wandb.config.update(
+    #     {
+    #         "rnd_scale": self.rnd_scale,
+    #     })
 
 def init_optionQ(self, env, args, exploration_options):
     obs_space, _ = utils.get_obss_preprocessor(env.observation_space)

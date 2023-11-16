@@ -1,7 +1,7 @@
 import random
 import utils
 import numpy as np
-import wandb
+# import wandb
 import datetime
 from torch.distributions import Bernoulli
 
@@ -24,22 +24,22 @@ class DRQNAgent:
         model_dir,
         args,
     ):
-        self.log_wandb = args.log_wandb
-        if self.log_wandb:
-            wandb.init(project="LESSON")
-            date = datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-            default_model_name = "{}_{}_{}".format(
-                args.env, args.algorithm, date
-            )
-            model_name = args.model or default_model_name
-            wandb.run.name = model_name
-            wandb.config.update(
-                {
-                    "batch_size": episode_batch_size,
-                    "exploration_options": str(exploration_options),
-                    "max_episode_in_memory": max_episode_num,
-                }
-            )
+        # self.log_wandb = args.log_wandb
+        # if self.log_wandb:
+        #     wandb.init(project="LESSON")
+        #     date = datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
+        #     default_model_name = "{}_{}_{}".format(
+        #         args.env, args.algorithm, date
+        #     )
+        #     model_name = args.model or default_model_name
+        #     wandb.run.name = model_name
+        #     wandb.config.update(
+        #         {
+        #             "batch_size": episode_batch_size,
+        #             "exploration_options": str(exploration_options),
+        #             "max_episode_in_memory": max_episode_num,
+        #         }
+        #     )
 
         self.env = env
         self.eval_env = eval_env

@@ -1,7 +1,7 @@
 import numpy as np
 import utils
 import time
-import wandb
+# import wandb
 
 
 def set_log(
@@ -31,9 +31,9 @@ def set_log(
         data += [sigmoid_termonations[0], sigmoid_termonations[1], sigmoid_termonations[2], sigmoid_termonations[3]]
 
     self.txt_logger.info(
-        "E {} | F {:06} | D {} | rR:μσmM {:.2f} {:.2f} {:.2f} | pL {:.3f}".format(*data)
+        "E {} | F {:06} | D {} | rR:μσmM {:.2f} {:.2f} {:.2f} | pL {:.3f}".format(*data).encode("utf8")
     )
 
-    if self.log_wandb:
-        for field, value in zip(header, data):
-            wandb.log({field: value}, step=num_frames)
+    # if self.log_wandb:
+    #     for field, value in zip(header, data):
+    #         wandb.log({field: value}, step=num_frames)
