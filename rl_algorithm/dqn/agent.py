@@ -25,6 +25,7 @@ class DQNAgent:
         preprocess_obs,
         model_dir,
         args,
+        preload
     ):
         # self.log_wandb = args.log_wandb
         # if self.log_wandb:
@@ -44,18 +45,24 @@ class DQNAgent:
         self.policy_network = DQN(obs_space, env.action_space, True, include_mission).to(device)
         self.target_network = DQN(obs_space, env.action_space, True, include_mission).to(device)
 
-        # self.policy_network.load_state_dict(utils.get_model_state(model_dir))
-        # if hasattr(preprocess_obs, "vocab"):
-        #     preprocess_obs.vocab.load_vocab(utils.get_vocab(model_dir))
+        if preload:
+            status = utils.get_status(model_dir)  
+            self.policy_network.load_state_dict(utils.get_model_state(model_dir))
+            if hasattr(preprocess_obs, "vocab"):
+                preprocess_obs.vocab.load_vocab(utils.get_vocab(model_dir))
+          
+
 
         self.memory = ReplayMemory(args.max_memory, preprocess_obs)
 
         utils.common_init.init(self, env=env, preprocess_obs=preprocess_obs, args=args, train_interval=10)
-        # self.optimizer.load_state_dict(utils.get_o)
+        
+        
         
         utils.common_init.init_log(self, model_dir=model_dir)
 
-
+        if preload:
+            self.optimizer.load_state_dict(status["optimizer_state"])
 
         self.rnd_policy_network = DQN(obs_space, env.action_space, True, include_mission).to(device)
         self.rnd_target_network = DQN(obs_space, env.action_space, True, include_mission).to(device)
@@ -68,9 +75,10 @@ class DQNAgent:
             exploration_options=exploration_options,
         )
 
-        # status = utils.get_status(model_dir)    
-        # if "optimizer_state" in status:
-        #     self.optimizer.load_state_dict(status["optimizer_state"])
+        if preload:
+         
+            if "optimizer_state" in status:
+                self.optimizer.load_state_dict(status["optimizer_state"])
 
     def collect_experiences(
         self,

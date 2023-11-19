@@ -1,10 +1,14 @@
 import argparse
 import numpy
+import time
 
 import utils
 from utils import device
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] ="TRUE"
 
-
+from rl_algorithm.drqn.agent import DRQNAgent
+from rl_algorithm.dqn.agent import DQNAgent
 # Parse arguments
 
 parser = argparse.ArgumentParser()
@@ -28,6 +32,11 @@ parser.add_argument("--memory", action="store_true", default=False,
                     help="add a LSTM to the model")
 parser.add_argument("--text", action="store_true", default=False,
                     help="add a GRU to the model")
+parser.add_argument("--algorithm", type=str, default="dqn", help="dqn, drqn")
+parser.add_argument("--max-memory", type=int, default=500000, help="Maximum experiences stored (default: 500000)")
+parser.add_argument("--softmax_ww", type=int, default=50)
+parser.add_argument("--lr", type=float, default=0.0001, help="learning rate (default: 0.0001)")
+parser.add_argument("--rnd_scale", type=float, default=None)
 
 args = parser.parse_args()
 
@@ -46,11 +55,38 @@ for _ in range(args.shift):
     env.reset()
 print("Environment loaded\n")
 
+obs_space, preprocess_obss = utils.get_obss_preprocessor(
+    env.observation_space
+)
+
+
+exploration_options = ["epsilon-random", "epsilon-z", "epsilon-rnd", "epsilon"]
+
 # Load agent
 
 model_dir = utils.get_model_dir(args.model)
-agent = utils.Agent(env.observation_space, env.action_space, model_dir,
-                    argmax=args.argmax, use_memory=args.memory, use_text=args.text)
+if args.algorithm == "dqn":
+    agent = DQNAgent(
+        env=env,
+        eval_env=env,
+        exploration_options=exploration_options,
+        device=device,
+        args=args,
+        preprocess_obs=preprocess_obss,
+        model_dir=model_dir,
+        preload=False
+    )
+if args.algorithm == "drqn":
+    agent = DRQNAgent(
+        env=env,
+        eval_env=eval_env,
+        exploration_options=exploration_options,
+        device=device,
+        args=args,
+        preprocess_obs=preprocess_obss,
+        model_dir=model_dir,
+    )
+
 print("Agent loaded\n")
 
 # Run the agent
@@ -61,22 +97,26 @@ if args.gif:
     frames = []
 
 # Create a window to view the environment
-env.render()
+obs = env.reset()[0]
 
-for episode in range(args.episodes):
-    obs, _ = env.reset()
+done = False
 
-    while True:
-        env.render()
-        if args.gif:
+log_loss = []
+log_reward = []
+episode_step = 0
+while not done and episode_step < agent.max_episode_length:
+    # time.sleep(1)
+    env.render()
+    if args.gif:
             frames.append(numpy.moveaxis(env.get_frame(), 2, 0))
+    episode_step += 1
+    preprocessed_obs = agent.preprocess_obs([obs], device=agent.device)
 
-        action, _ = utils.action.select_greedy_action(agent, obs, None)
-        obs, reward, terminated, truncated, _ = env.step(action)
-        done = terminated | truncated
-
-        if done:
-            break
+    action, _ = utils.action.select_greedy_action(agent, preprocessed_obs, None)
+    print(action)
+    new_obs, reward, done, _, _ = env.step(action)
+    log_reward.append(reward)
+    obs = new_obs
 
 if args.gif:
     print("Saving gif... ", end="")

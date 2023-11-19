@@ -27,13 +27,20 @@ parser.add_argument("--softmax_ww", type=int, default=50)
 parser.add_argument("--log_wandb", type=bool, default=False)
 parser.add_argument("--save-interval", type=int, default=10,
                     help="number of updates between two saves (default: 10, 0 means no saving)")
-parser.add_argument("--pause", type=float, default=0.1,
+parser.add_argument("--pause", type=float, default=0.2,
                     help="pause duration between two consequent actions of the agent (default: 0.1)")
 parser.add_argument("--gif", type=str, default=None,
                     help="store output as gif with the given filename")
 parser.add_argument("--episodes", type=int, default=1000000,
                     help="number of episodes to visualize")
+
 args = parser.parse_args()
+
+if args.gif:
+    from array2gif import write_gif
+    import numpy
+    frames = []
+
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -76,6 +83,7 @@ if args.algorithm == "dqn":
         args=args,
         preprocess_obs=preprocess_obss,
         model_dir=model_dir,
+        preload=False
     )
 if args.algorithm == "drqn":
     agent = DRQNAgent(
@@ -139,6 +147,8 @@ log_reward = []
 episode_step = 0
 while not done and episode_step < agent.max_episode_length:
     viz_env.render()
+    if args.gif:
+            frames.append(numpy.moveaxis(viz_env.get_frame(), 2, 0))
     episode_step += 1
     preprocessed_obs = agent.preprocess_obs([obs], device=agent.device)
 
@@ -147,7 +157,7 @@ while not done and episode_step < agent.max_episode_length:
     log_reward.append(reward)
     obs = new_obs
 
-# if args.gif:
-#     print("Saving gif... ", end="")
-#     write_gif(numpy.array(frames), args.gif+".gif", fps=1/args.pause)
-#     print("Done.")
+if args.gif:
+    print("Saving gif... ", end="")
+    write_gif(numpy.array(frames), args.gif+".gif", fps=1/args.pause)
+    print("Done.")
