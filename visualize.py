@@ -1,6 +1,7 @@
 import argparse
 import numpy
 import time
+import copy
 
 import utils
 from utils import device
@@ -97,28 +98,52 @@ if args.gif:
     frames = []
 
 # Create a window to view the environment
-obs = env.reset()[0]
+# obs = env.reset()[0]
 
 done = False
 
 log_loss = []
 log_reward = []
 episode_step = 0
-while not done and episode_step < agent.max_episode_length:
-    # time.sleep(1)
-    env.render()
-    if args.gif:
-            frames.append(numpy.moveaxis(env.get_frame(), 2, 0))
-    episode_step += 1
-    preprocessed_obs = agent.preprocess_obs([obs], device=agent.device)
+agent.update_target_network()
 
-    action, _ = utils.action.select_greedy_action(agent, preprocessed_obs, None)
-    print(action)
-    new_obs, reward, done, _, _ = env.step(action)
-    log_reward.append(reward)
-    obs = new_obs
+
+
+
+reward = 0
+while reward == 0:
+    action_done_cache = []
+    obs = env.reset()[0]
+    episode_step = 0
+    done = False
+    while not done and episode_step < agent.max_episode_length:
+        # time.sleep(1)
+        env.render()
+        if args.gif:
+                frames.append(numpy.moveaxis(env.get_frame(), 2, 0))
+        episode_step += 1
+
+        preprocessed_obs = agent.preprocess_obs([obs], device=agent.device)
+        foundInCache = []
+
+        for cached in action_done_cache:
+            if numpy.array_equal(cached["obs"], obs["image"]):
+                foundInCache = cached["actions"]
+                # print(foundInCache)
+        action, _ = utils.action.select_greedy_action(agent, preprocessed_obs, None, used_actions=foundInCache)
+        
+        if len(foundInCache) == 0:
+            action_done_cache.append({"obs": obs["image"], "actions": [action]})
+        elif len(foundInCache) < 7:
+            foundInCache.append(action)
+        
+        new_obs, reward, done, _, _ = env.step(action)
+
+        log_reward.append(reward)
+        obs = new_obs
 
 if args.gif:
     print("Saving gif... ", end="")
     write_gif(numpy.array(frames), args.gif+".gif", fps=1/args.pause)
     print("Done.")
+

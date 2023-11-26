@@ -1,10 +1,12 @@
 import torch
 import random
+import numpy as np
 
 def select_greedy_action(
     self,
     preprocessed_obs,
     hidden_states,
+    used_actions = None
 ):
     new_hidden_states = hidden_states
     with torch.no_grad():
@@ -14,6 +16,13 @@ def select_greedy_action(
             new_hidden_states = {"q": hidden_state, "rnd": hidden_states["rnd"]}
         else:
             Q = self.policy_network(preprocessed_obs)
+        if used_actions:
+            npQ = Q.numpy()[0]
+
+            if len(used_actions) < 7:
+                npQ[used_actions] = 0
+            return np.argmax(npQ), new_hidden_states
+        
         action = torch.argmax(Q).item()
     return action, new_hidden_states
 
