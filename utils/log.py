@@ -31,7 +31,7 @@ def set_log(
         data += [sigmoid_termonations[0], sigmoid_termonations[1], sigmoid_termonations[2], sigmoid_termonations[3]]
 
     self.txt_logger.info(
-        "E {} | F {:06} | D {} | rR:μσmM {:.2f} {:.2f} {:.2f} | pL {:.3f}".format(*data)
+        "E {} | F {:06} | D {} | rR:μσmM {:.2f} {:.2f} {:.2f} | pL {:.3f}".format(*data).encode('utf8')
     )
 
     if self.log_wandb:

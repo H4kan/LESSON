@@ -1,9 +1,13 @@
 import datetime
+import os
 import random
+
+import torch
 import utils
 import wandb
 import numpy as np
 from torch.distributions import Bernoulli
+from array2gif import write_gif
 
 from rl_algorithm.dqn.replay_memory import ReplayMemory
 from rl_algorithm.dqn.rnd import RND
@@ -24,6 +28,8 @@ class DQNAgent:
         device,
         preprocess_obs,
         model_dir,
+        gif_interval,
+        pause,
         args,
     ):
         self.log_wandb = args.log_wandb
@@ -38,6 +44,10 @@ class DQNAgent:
 
         self.env = env
         self.eval_env = eval_env
+        self.gif_interval = gif_interval
+        self.model_dir = model_dir
+        self.test_call_count = 0 
+        self.pause = pause
 
         obs_space, _ = utils.get_obss_preprocessor(env.observation_space)
         include_mission = utils.check_run.include_mission(args.env)
@@ -160,7 +170,7 @@ class DQNAgent:
         return loss.item()
 
     def update_target_network(self):
-        print("Target network update")
+        print("Target network update".encode('utf8'))
         self.target_network.load_state_dict(self.policy_network.state_dict())
         self.rnd_target_network.load_state_dict(
             self.rnd_policy_network.state_dict()
@@ -171,30 +181,57 @@ class DQNAgent:
 
     def test(self, num_frames, test_return_per_frame_):
         if num_frames % self.test_interval == 0:
-            print(f"test start @ num frames: {num_frames}")
+            self.test_call_count += 1
+            print(f"test start @ num frames: {num_frames}".encode('utf8'))
             test_return = []
-            for _ in range(5):
-                test_logs = self.test_collect_experiences()
+            for i in range(5):
+                test_logs = self.test_collect_experiences(num_frames, i, save_gif=self.test_call_count % self.gif_interval == 0)
                 test_return_per_episode = utils.synthesize(test_logs["rewards"])
                 test_return.append(list(test_return_per_episode.values())[2])
             test_return_per_frame_.append(np.mean(test_return))
 
-    def test_collect_experiences(self):
+    def test_collect_experiences(self, num_frames, test_id, save_gif=False):
         obs = self.eval_env.reset()[0]
         done = False
 
         log_loss = []
         log_reward = []
         episode_step = 0
+        frames = []  # Initialize an array to store frames
         while not done and episode_step < self.max_episode_length:
             episode_step += 1
+            self.eval_env.render() # not sure if needed
+            if save_gif:
+                frames.append(np.moveaxis(self.eval_env.get_frame(), 2, 0))
+
             preprocessed_obs = self.preprocess_obs([obs], device=self.device)
 
             action, _ = utils.action.select_greedy_action(self, preprocessed_obs, None)
             new_obs, reward, done, _, _ = self.eval_env.step(action)
             log_reward.append(reward)
             obs = new_obs
+        
+        if save_gif:
+            gif_dir = os.path.join(self.model_dir, "gifs")
+            os.makedirs(gif_dir, exist_ok=True)
+            gif_path = os.path.join(gif_dir, f"visualization_at_frame_{num_frames}_{test_id}.gif")
+            write_gif(np.array(frames), gif_path, fps=1/self.pause)
+            print(f"GIF saved at {gif_path}")
 
         logs = {"num_frames": None, "rewards": log_reward, "loss": log_loss}
         self.logs = logs
         return logs
+    
+    def save_model(self, filepath):
+        state = {
+            'policy_network_state_dict': self.policy_network.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+        }
+        torch.save(state, filepath)
+        print(f"Model saved to {filepath}")
+
+    def load_model(self, filepath):
+        state = torch.load(filepath, map_location=lambda storage, loc: storage)
+        self.policy_network.load_state_dict(state['policy_network_state_dict'])
+        self.optimizer.load_state_dict(state['optimizer_state_dict'])
+        print(f"Model loaded from {filepath}")   

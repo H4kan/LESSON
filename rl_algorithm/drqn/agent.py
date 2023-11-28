@@ -185,7 +185,7 @@ class DRQNAgent:
 
     def test(self, num_frames, test_return_per_frame_):
         if num_frames % self.test_interval == 0:
-            print(f"test start @ num frames: {num_frames}")
+            print(f"test start @ num frames: {num_frames}".encode('utf8'))
             test_return = []
             for _ in range(5):
                 test_logs = self.test_collect_experiences()

@@ -3,9 +3,9 @@ import gym_minigrid
 from gym_minigrid.wrappers import *
 from multiprocessing import Process, Pipe
 
-def make_env(env_key, seed=None):
+def make_env(env_key, seed=None, render_mode=None):
     # create env
-    env = gym.make(env_key)
+    env = gym.make(env_key, render_mode=render_mode)
     env.reset(seed=seed)
     return env
 
