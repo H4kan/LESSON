@@ -185,7 +185,7 @@ class DQNAgent:
             print(f"test start @ num frames: {num_frames}".encode('utf8'))
             test_return = []
             for i in range(5):
-                test_logs = self.test_collect_experiences(num_frames, i, save_gif=self.test_call_count % self.gif_interval == 0)
+                test_logs = self.test_collect_experiences(num_frames, i, save_gif=self.gif_interval > 0 and self.test_call_count % self.gif_interval == 0)
                 test_return_per_episode = utils.synthesize(test_logs["rewards"])
                 test_return.append(list(test_return_per_episode.values())[2])
             test_return_per_frame_.append(np.mean(test_return))
