@@ -6,6 +6,7 @@ import utils
 from rl_algorithm.drqn.agent import DRQNAgent
 from rl_algorithm.dqn.agent import DQNAgent
 from array2gif import write_gif
+import os
 
 # Parse arguments
 import argparse
@@ -76,6 +77,9 @@ else:
 agent.load_model(args.model)
 print("Agent loaded\n")
 
+if args.gif:
+    os.makedirs("gifs", exist_ok=True)
+
 log_reward = []
 # Run the agent
 for episode in range(args.episodes):
@@ -100,7 +104,7 @@ for episode in range(args.episodes):
 
     # Saving the gif if required for each episode
     if args.gif:
-        gif_filename = f"{args.gif}_episode_{episode + 1}.gif"
+        gif_filename = f"gifs/{args.gif}_episode_{episode + 1}.gif"
         print(f"Saving gif for episode {episode + 1}... ", end="")
         write_gif(numpy.array(frames), gif_filename, fps=1 / args.pause)
         print("Done.")
