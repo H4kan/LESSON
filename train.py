@@ -58,7 +58,7 @@ obs_space, preprocess_obss = utils.get_obss_preprocessor(
     env.observation_space
 )
 
-exploration_options = ["epsilon-random", "epsilon-z", "epsilon-rnd", "epsilon"]
+exploration_options = ["epsilon-random", "epsilon-z", "cls", "epsilon"]
 
 if args.algorithm == "dqn":
     agent = DQNAgent(

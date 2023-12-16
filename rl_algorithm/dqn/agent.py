@@ -68,6 +68,10 @@ class DQNAgent:
             args=args,
             exploration_options=exploration_options,
         )
+        # array of objects like {obs, actions} where obs is some env state 
+        # and actions is count of actions taken in this state
+        self.action_done_cache = [];
+
 
     def collect_experiences(
         self,

@@ -1,5 +1,6 @@
 import torch
 import random
+import numpy as np
 
 def select_greedy_action(
     self,
@@ -36,6 +37,15 @@ def select_action_from_option(
         else:
             Q = self.policy_network(preprocessed_obs)
             Q_rnd = self.rnd_policy_network(preprocessed_obs)
+    
+    self.action_count = []
+    for cached in self.action_done_cache:
+        if np.array_equal(cached["obs"], preprocessed_obs["image"]):
+            self.action_count = cached["actions"]
+    # that means we havent cached this state yet
+    if len(self.action_count) == 0:
+        self.action_count = {"obs": preprocessed_obs["image"], "actions": [0 for i in range(self.n_actions)] }
+        self.action_done_cache.append(self.action_count)
 
     if current_option == 0:
         self.type = "r"
@@ -43,10 +53,16 @@ def select_action_from_option(
     elif current_option == 1:
         self.type = "z"
         action = self.w
+    # elif current_option == 2:
+    #     self.type = "rnd"
+    #     action = torch.argmax(Q_rnd).item()
     elif current_option == 2:
-        self.type = "rnd"
-        action = torch.argmax(Q_rnd).item()
+        self.type = "c"
+        explo_weights = [1.0 / x if x != 0 else 1.0 for x in self.action_count]
+        action = random.choices(range(len(explo_weights)), weights=explo_weights, k=1)[0]
     elif current_option == 3:
         self.type = "e"
         action = torch.argmax(Q).item()
+
+    self.action_count[action] = self.action_count[action] + 1
     return action, new_hidden_states
