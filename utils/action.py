@@ -22,7 +22,8 @@ def select_action_from_option(
     self,
     preprocessed_obs,
     hidden_states,
-    current_option
+    current_option,
+    obs
 ):
     new_hidden_states = hidden_states
     with torch.no_grad():
@@ -40,12 +41,13 @@ def select_action_from_option(
     
     self.action_count = []
     for cached in self.action_done_cache:
-        if np.array_equal(cached["obs"], preprocessed_obs["image"]):
+        if np.array_equal(cached["obs"], obs["image"]):
             self.action_count = cached["actions"]
     # that means we havent cached this state yet
     if len(self.action_count) == 0:
-        self.action_count = {"obs": preprocessed_obs["image"], "actions": [0 for i in range(self.n_actions)] }
-        self.action_done_cache.append(self.action_count)
+        handler = {"obs": obs["image"], "actions": [0 for i in range(self.n_actions)] }
+        self.action_done_cache.append(handler)
+        self.action_count = handler["actions"]
 
     if current_option == 0:
         self.type = "r"
@@ -58,7 +60,7 @@ def select_action_from_option(
     #     action = torch.argmax(Q_rnd).item()
     elif current_option == 2:
         self.type = "c"
-        explo_weights = [1.0 / x if x != 0 else 1.0 for x in self.action_count]
+        explo_weights = [1.0 / (x + 1) for x in self.action_count]
         action = random.choices(range(len(explo_weights)), weights=explo_weights, k=1)[0]
     elif current_option == 3:
         self.type = "e"

@@ -95,7 +95,7 @@ class DQNAgent:
                 current_option = self.option_policy_network.select_option(preprocessed_obs, self.exploration_options, self.softmax_ww)
                 self.w = random.randrange(self.n_actions)
 
-            action, _ = utils.action.select_action_from_option(self, preprocessed_obs, None, current_option)
+            action, _ = utils.action.select_action_from_option(self, preprocessed_obs, None, current_option, obs)
             new_obs, reward, done, _, _ = self.env.step(action)
             new_preprocessed_obs = self.preprocess_obs([new_obs], device=self.device)
 
