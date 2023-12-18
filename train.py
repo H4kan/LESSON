@@ -1,4 +1,5 @@
 import time
+import wandb
 import utils
 import argparse
 import datetime
@@ -22,6 +23,9 @@ parser.add_argument("--algorithm", type=str, default="dqn", help="dqn, drqn")
 parser.add_argument("--rnd_scale", type=float, default=None)
 parser.add_argument("--softmax_ww", type=int, default=50)
 parser.add_argument("--log_wandb", type=bool, default=False)
+parser.add_argument("--pause", type=float, default=0.2, help="Pause duration between two consequent actions of the agent (default: 0.2)")
+parser.add_argument("--save-interval", type=int, default=100000, help="Interval (in frames) at which to save the model (default: 100000)")
+parser.add_argument("--gif-interval", type=int, default=0, help="Interval for saving GIFs during testing (0 = never)")
 args = parser.parse_args()
 
 torch.backends.cudnn.deterministic = True
@@ -54,7 +58,7 @@ obs_space, preprocess_obss = utils.get_obss_preprocessor(
     env.observation_space
 )
 
-exploration_options = ["epsilon-random", "epsilon-z", "epsilon-rnd", "epsilon"]
+exploration_options = ["epsilon-random", "epsilon-z", "cls", "epsilon"]
 
 if args.algorithm == "dqn":
     agent = DQNAgent(
@@ -64,7 +68,9 @@ if args.algorithm == "dqn":
         device=device,
         args=args,
         preprocess_obs=preprocess_obss,
+        gif_interval=args.gif_interval,
         model_dir=model_dir,
+        pause=args.pause,
     )
 if args.algorithm == "drqn":
     agent = DRQNAgent(
@@ -74,8 +80,12 @@ if args.algorithm == "drqn":
         device=device,
         args=args,
         preprocess_obs=preprocess_obss,
-        model_dir=model_dir,
+        gif_interval=args.gif_interval,
+        model_dir=model_dir
     )
+
+save_interval = args.save_interval
+last_save_frame = 0
 
 while num_frames < args.frames:
     update_start_time = time.time()
@@ -87,10 +97,31 @@ while num_frames < args.frames:
         test_return_per_frame_=test_return_per_frame_,
     )
     update_end_time = time.time()
-
     num_frames = logs["num_frames"]
-
     episode += 1
+
+    # Save model at specified interval
+    if num_frames - last_save_frame >= save_interval or num_frames >= args.frames:
+        save_path = f"{model_dir}/model_{num_frames}.pth"
+        agent.save_model(save_path)
+        last_save_frame = num_frames
+        print(f"Model saved at frame {num_frames}")
+
+        if args.log_wandb:
+            artifact_name = f"model_at_{num_frames}_frames"
+            artifact = wandb.Artifact(artifact_name, type='model')
+            artifact.add_file(save_path)
+            wandb.log_artifact(artifact)
+
+if num_frames - last_save_frame > 0:
+    save_path = f"{model_dir}/model_final.pth"
+    agent.save_model(save_path)
+    print("Final model saved")
+
+    if args.log_wandb:
+        artifact = wandb.Artifact('final_model', type='model')
+        artifact.add_file(save_path)
+        wandb.log_artifact(artifact)
 
 return_per_frame.append(return_per_frame_)
 test_return_per_frame.append(test_return_per_frame_)

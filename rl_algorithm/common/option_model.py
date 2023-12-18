@@ -26,6 +26,7 @@ class OptionQ(BaseModel):
     def __init__(self, obs_space, num_options, is_init):
         super().__init__(obs_space)
 
+        self.num_options = num_options
         self.actor = nn.Sequential(
             nn.Linear(embedding_size, embedding_size),
             nn.Tanh(),
@@ -117,10 +118,11 @@ class OptionQ(BaseModel):
     def predict_option_termination(self, obs, current_option):
         processed_obs = self.preprocess_obs(obs)
         termination = self.terminations(processed_obs)[:, current_option].sigmoid()
-        sigmoid_termonations = [self.terminations(processed_obs)[:, o].sigmoid().item() for o in range(4)]
+
+        sigmoid_termonations = [self.terminations(processed_obs)[:, o].sigmoid().item() for o in range(self.num_options)]
 
         termination = torch.clip(termination, 0.1, 0.9)
-        sigmoid_termonations = np.clip([self.terminations(processed_obs)[:, o].sigmoid().item() for o in range(4)], 0.1, 0.9).tolist()
+        sigmoid_termonations = np.clip([self.terminations(processed_obs)[:, o].sigmoid().item() for o in range(self.num_options)], 0.1, 0.9).tolist()
 
         return termination, sigmoid_termonations
 
@@ -146,6 +148,6 @@ class OptionQ(BaseModel):
         # next_option = np.random.choice(
             # len(exploration_options), 1, p=exploration_ratio
         # )[0]
-        next_option = self.choice([0, 1, 2, 3], exploration_ratio)
+        next_option = self.choice([i for i in range(len(exploration_options))], exploration_ratio)
 
         return next_option
