@@ -7,7 +7,7 @@ import utils
 import wandb
 import numpy as np
 from torch.distributions import Bernoulli
-from array2gif import write_gif
+# from array2gif import write_gif
 
 from rl_algorithm.dqn.replay_memory import ReplayMemory
 from rl_algorithm.dqn.rnd import RND
@@ -68,10 +68,13 @@ class DQNAgent:
             args=args,
             exploration_options=exploration_options,
         )
+        # (this is old desc)
         # array of objects like {obs, actions} where obs is some env state 
         # and actions is count of actions taken in this state
-        self.action_done_cache = [];
+        self.action_done_cache = [0 for i in range(self.n_actions)]
+        self.explo_weights = [1.0 for i in range(self.n_actions)]
 
+        self.local_action_cache = {}
 
     def collect_experiences(
         self,
