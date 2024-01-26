@@ -51,23 +51,23 @@ def select_action_from_option(
     elif current_option == 1:
         self.type = "z"
         action = self.w
-    # elif current_option == 2:
-    #     self.type = "rnd"
-    #     action = torch.argmax(Q_rnd).item()
-    # elif current_option == 2:
-    #     self.type = "c"
-    #     action = random.choices(range(len(self.explo_weights)), weights=self.explo_weights, k=1)[0]
     elif current_option == 2:
-        self.type = "c"
-        action = random.choices(range(self.n_actions), weights=self.local_action_cache[hash][1], k=1)[0]
+        self.type = "rnd"
+        action = torch.argmax(Q_rnd).item()
     elif current_option == 3:
+        self.type = "gls"
+        action = random.choices(range(len(self.explo_weights)), weights=self.explo_weights, k=1)[0]
+    elif current_option == 4:
+        self.type = "cls"
+        action = random.choices(range(self.n_actions), weights=self.local_action_cache[hash][1], k=1)[0]
+    elif current_option == 5:
         self.type = "e"
         action = torch.argmax(Q).item()
 
     self.local_action_cache[hash][0][action] = self.local_action_cache[hash][0][action] + 1
     self.local_action_cache[hash][1][action] = 1.0 / (self.local_action_cache[hash][0][action] + 1)
-    # self.action_done_cache[action] = self.action_done_cache[action] + 1
-    # self.explo_weights[action] = 1.0 / (self.action_done_cache[action] + 1);
+    self.action_done_cache[action] = self.action_done_cache[action] + 1
+    self.explo_weights[action] = 1.0 / (self.action_done_cache[action] + 1);
     return action, new_hidden_states
 
 def calculate_state_hash(state):

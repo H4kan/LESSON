@@ -7,7 +7,7 @@ import utils
 import wandb
 import numpy as np
 from torch.distributions import Bernoulli
-from array2gif import write_gif
+# from array2gif import write_gif
 
 from rl_algorithm.dqn.replay_memory import ReplayMemory
 from rl_algorithm.dqn.rnd import RND
